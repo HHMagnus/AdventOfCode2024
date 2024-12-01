@@ -50,9 +50,9 @@ dependencies = [
 
 [[package]]
 name = "aoc-client"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf657216cebd34a07b7cbb5c26ffce7f1dae23898a7cd4aa58be521e6eb65e91"
+checksum = "288e0c433c27c736b78615e7b9ada311b158b45f4f4f8ddb26a35123ab65f3a3"
 dependencies = [
  "chrono",
  "colored",

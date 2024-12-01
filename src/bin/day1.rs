@@ -11,13 +11,16 @@ fn main() -> AocResult<()> {
     let input: String = client.get_input()?;
 
     let answer_part1 = part1(input.clone());
-    client.submit_answer(1, answer_part1)?;
+    let part1 = client.submit_answer(1, answer_part1)?;
+	println!("{:?}", part1);
 	
     let answer_part2 = part2(input);
-    client.submit_answer(2, answer_part2)?;
+    let part2 = client.submit_answer(2, answer_part2)?;
+	println!("{:?}", part2);
 
 	Ok(())
 }
+
 fn part1(file: String) -> String {
 	let input = file.lines().map(|line| {
 		let mut split = line.split("   ");
