@@ -75,6 +75,9 @@ fn part2(file: String) -> String {
 	for line in lines {
 		let ((ax, ay), (bx, by), (px, py)) = line;
 
+		// ax * x + bx * y = px
+		// ay * x + by * y = py
+
 		let y = (py * ax - px * ay) / (by * ax - bx * ay);
 		let x = (px - y * bx) / ax;
 		if (ax * x + bx * y, ay * x + by * y) != (px, py) {
