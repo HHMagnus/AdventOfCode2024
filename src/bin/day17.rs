@@ -19,8 +19,8 @@ fn main() -> AocResult<()> {
     let answer_part2 = part2(input);
 	println!("Part 2: {}", answer_part2);
 	if answer_part2 == "0" || answer_part2 == "1" { panic!("One or zero???") }
-    //let part2 = client.submit_answer(2, answer_part2)?;
-	//println!("Part 2: {:?}", part2);
+    let part2 = client.submit_answer(2, answer_part2)?;
+	println!("Part 2: {:?}", part2);
 
 	Ok(())
 }
@@ -72,26 +72,29 @@ fn part1(file: String) -> String {
 fn part2(file: String) -> String {let lines = file.lines().collect::<Vec<_>>();
 	let program = lines[4].replace("Program: ", "").split(",").map(|x| x.parse::<usize>().unwrap()).collect::<Vec<_>>();
 
-	let mut res: usize = 0;
+	let mut ress = vec![0];
 
-	'o: for inst in program.into_iter().rev() {
-		println!("{:#048b}", res);
-		for trying in 0..8 {
-			let a = (res << 3) | trying;
-			if a == 0 { continue; }
-			let b = trying;
-			let b = b ^ 2;
-			let c = a >> b;
-			let b = b ^ c;
-			let b = b ^ 3;
-			if b % 8 == inst {
-				res = a;
-				continue 'o;
-			}
+	for inst in program.into_iter().rev() {
+		let mut new = Vec::new();
+		for res in &ress {
+			let xs = (0..8).filter_map(|trying| {
+				let a = (res << 3) | trying;
+				if a == 0 { return None; }
+				let b = trying;
+				let b = b ^ 2;
+				let c = a >> b;
+				let b = b ^ c;
+				let b = b ^ 3;
+				if b % 8 == inst { return Some(a) }
+				None
+			}).collect::<Vec<_>>();
+			new.push(xs);
 		}
-		panic!("not found {}", inst);
+
+		ress = new.into_iter().flatten().collect();
 	}
 
+	// Input program
 	// b = a % 8
 	// b = b ^ 2
 	// c = a / 2.pow(b)
@@ -101,5 +104,5 @@ fn part2(file: String) -> String {let lines = file.lines().collect::<Vec<_>>();
 	// a = a / 8
 	// restart
 
-	return res.to_string();
+	return ress[0].to_string();
 }
