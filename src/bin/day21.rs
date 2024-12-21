@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}, vec};
+use std::{collections::HashMap, vec};
 
 use aoc_client::{AocClient, AocResult};
 use itertools::Itertools;
@@ -28,7 +28,7 @@ fn main() -> AocResult<()> {
 }
 
 fn part1(file: String) -> String {
-	let numerical_map: HashMap<char, (i32, i32)> = [
+	let numerical_map: HashMap<char, (i64, i64)> = [
 		('A', (0, 0)),
 		('0', (-1, 0)),
 		('1', (-2, -1)),
@@ -41,7 +41,7 @@ fn part1(file: String) -> String {
 		('8', (-1, -3)),
 		('9', (0, -3)),
 	].into_iter().collect::<HashMap<_,_>>();
-	let directional_map: HashMap<char, (i32, i32)> = [
+	let directional_map: HashMap<char, (i64, i64)> = [
 		('A', (0, 0)),
 		('^', (-1, 0)),
 		('>', (0, 1)),
@@ -59,22 +59,22 @@ fn part1(file: String) -> String {
 		let robot2 = robot2.into_iter().map(|other| vec!['A'].into_iter().chain(other.into_iter()).collect::<Vec<_>>()).collect::<Vec<_>>();
 		let human = robot2.into_iter().flat_map(|other| way(&directional_map, other)).collect::<Vec<_>>();
 		let shortest = human.iter().min_by_key(|x| x.len()).unwrap();
-		let shortest = shortest.len() as i32;
-		let num = chars.into_iter().filter(|x| x.is_digit(10)).join("").parse::<i32>().unwrap();
+		let shortest = shortest.len() as i64;
+		let num = chars.into_iter().filter(|x| x.is_digit(10)).join("").parse::<i64>().unwrap();
 		shortest * num
-	}).sum::<i32>();
+	}).sum::<i64>();
 
 	return res.to_string();
 }
 
-fn way(map: &HashMap<char, (i32, i32)>, chars: Vec<char>) -> Vec<Vec<char>> {
+fn way(map: &HashMap<char, (i64, i64)>, chars: Vec<char>) -> Vec<Vec<char>> {
 	let mut results = Vec::new();
 	results.push(Vec::<char>::new());
 	for x in chars.windows(2) {
 		let x1 = map[&x[0]];
 		let x2 = map[&x[1]];
 
-		let presses = presses(map, x1, x2);
+		let presses = presses(x1, x2);
 		results = results.into_iter().flat_map(|vec| {
 			if presses.is_empty() {
 				let mut cloned = vec.clone();
@@ -92,7 +92,7 @@ fn way(map: &HashMap<char, (i32, i32)>, chars: Vec<char>) -> Vec<Vec<char>> {
 	results
 }
 
-fn presses(map: &HashMap<char, (i32, i32)>, x1: (i32, i32), x2: (i32, i32)) -> Vec<Vec<char>> {
+fn presses(x1: (i64, i64), x2: (i64, i64)) -> Vec<Vec<char>> {
 	let diff1 = x1.0 - x2.0;
 	let diff2 = x1.1 - x2.1;
 	if diff1 == 0 && diff2 == 0 {
@@ -120,19 +120,53 @@ fn presses(map: &HashMap<char, (i32, i32)>, x1: (i32, i32), x2: (i32, i32)) -> V
 	let outer1 = (x2.0, x1.1);
 	let outer2 = (x1.0, x2.1);
 
-	if !map.values().contains(&outer1) {
+	let illegal_position = (-2, 0);
+
+	if illegal_position == outer1 {
 		return vec![moves2.iter().chain(moves1.iter()).cloned().collect()];
 	}
 
-	if !map.values().contains(&outer2) {
+	if illegal_position == outer2 {
 		return vec![moves1.iter().chain(moves2.iter()).cloned().collect()];
 	}
 
 	vec![moves2.iter().chain(moves1.iter()).cloned().collect(), moves1.iter().chain(moves2.iter()).cloned().collect()]
 }
 
+fn best_way(cache: &mut HashMap<(Vec<char>, (i64, i64), i64), i64>, map: &HashMap<char, (i64, i64)>, sequence: Vec<char>, depth: i64, curr: (i64, i64)) -> i64 {
+	if sequence.is_empty() {
+		return 0;
+	}
+
+	let cache_key = (sequence.clone(), curr.clone(), depth.clone());
+	if cache.contains_key(&cache_key) {
+		return cache[&cache_key];
+	}
+	
+	let next = sequence[0];
+	let next_pos = map[&next];
+
+	let presses = presses(curr, next_pos);
+
+	let min = if depth == 0 {
+		presses.into_iter().map(|x| x.len() as i64).min().unwrap_or(0) + 1
+	} else {
+		presses.into_iter()
+		.map(|mut x| {
+			x.push('A');
+			best_way(cache, map, x, depth-1, (0, 0))
+		})
+		.min()
+		.unwrap_or(1)
+	};
+
+	let res = min + best_way(cache, map, sequence[1..].to_vec(), depth, next_pos);
+	cache.insert(cache_key, res);
+	return res;
+}
+
 fn part2(file: String) -> String {
-	let numerical_map: HashMap<char, (i32, i32)> = [
+	let numerical_map: HashMap<char, (i64, i64)> = [
 		('A', (0, 0)),
 		('0', (-1, 0)),
 		('1', (-2, -1)),
@@ -145,7 +179,7 @@ fn part2(file: String) -> String {
 		('8', (-1, -3)),
 		('9', (0, -3)),
 	].into_iter().collect::<HashMap<_,_>>();
-	let directional_map: HashMap<char, (i32, i32)> = [
+	let directional_map: HashMap<char, (i64, i64)> = [
 		('A', (0, 0)),
 		('^', (-1, 0)),
 		('>', (0, 1)),
@@ -157,20 +191,12 @@ fn part2(file: String) -> String {
 	let res = lines.into_iter().map(|x| {
 		let chars = x.chars().collect::<Vec<_>>();
 		let chars = vec!['A'].into_iter().chain(chars.into_iter()).collect::<Vec<_>>();
-		let mut chain = way(&numerical_map, chars.clone());
-		for i in 0..25 {
-			println!("{} {}", i, chain.len());
-			chain = chain.into_iter().map(|other| vec!['A'].into_iter().chain(other.into_iter()).collect::<Vec<_>>()).collect::<Vec<_>>();
-			chain = chain.into_iter().flat_map(|other| way(&directional_map, other)).collect::<Vec<_>>();
-			let min = chain.iter().map(|x| x.len()).min().unwrap();
-			let max = chain.iter().map(|x| x.len()).max().unwrap();
-			println!("min={}, max={}", min, max);
-		}
-		let shortest = chain.iter().min_by_key(|x| x.len()).unwrap();
-		let shortest = shortest.len() as i32;
-		let num = chars.into_iter().filter(|x| x.is_digit(10)).join("").parse::<i32>().unwrap();
+		let chain = way(&numerical_map, chars.clone());
+		let shortest = chain.into_iter().map(|x| best_way(&mut HashMap::new(), &directional_map, x, 24, (0, 0))).min().unwrap();
+		let num = chars.into_iter().filter(|x| x.is_digit(10)).join("").parse::<i64>().unwrap();
+		println!("{}: {} * {}", x, shortest, num);
 		shortest * num
-	}).sum::<i32>();
+	}).sum::<i64>();
 
 	return res.to_string();
 }
