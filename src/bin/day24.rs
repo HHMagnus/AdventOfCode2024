@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet, VecDeque}, env::args, fmt::format, iter::Inspect, mem::swap};
+use std::collections::{HashMap, HashSet};
 
 use aoc_client::{AocClient, AocResult};
 use itertools::Itertools;
